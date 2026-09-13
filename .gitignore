@@ -1,0 +1,31 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Java / Maven
+target/
+*.class
+
+# Python
+__pycache__/
+*.pyc
+
+# .NET
+bin/
+obj/
+
+# IDE
+.metadata/
+.classpath
+.project
+.settings/
+.factorypath
+
+# Node
+node_modules/
+dist/
+
+# OS
+.DS_Store
+Thumbs.db

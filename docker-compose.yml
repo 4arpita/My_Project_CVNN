@@ -1,0 +1,66 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: vaccination_db
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: cvns
+      MYSQL_PASSWORD: cvns123
+    ports: ["3307:3306"]
+    volumes: ["cvns_mysql_data:/var/lib/mysql"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  email-service:
+    build: ./email-service-dotnet
+    environment:
+      ASPNETCORE_URLS: http://+:8081
+      Email__Enabled: ${SMTP_ENABLED:-false}
+      Email__Host: ${SMTP_HOST:-smtp.gmail.com}
+      Email__Port: ${SMTP_PORT:-587}
+      Email__Username: ${SMTP_USERNAME:-}
+      Email__Password: ${SMTP_PASSWORD:-}
+      Email__FromEmail: ${SMTP_FROM_EMAIL:-}
+      Email__FromName: ${SMTP_FROM_NAME:-VaccineCare}
+    ports: ["8081:8081"]
+
+  chatbot-service:
+    build: ./chatbot-service-python
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+    ports: ["8000:8000"]
+
+  backend:
+    build: ./backend-springboot
+    depends_on:
+      mysql: {condition: service_healthy}
+      email-service: {condition: service_started}
+      chatbot-service: {condition: service_started}
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/vaccination_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      DB_USERNAME: cvns
+      DB_PASSWORD: cvns123
+      EMAIL_SERVICE_URL: http://email-service:8081
+      CHATBOT_SERVICE_URL: http://chatbot-service:8000
+      NOMINATIM_BASE_URL: ${NOMINATIM_BASE_URL:-https://nominatim.openstreetmap.org}
+      JWT_SECRET: ${JWT_SECRET:-ThisIsAProductionLengthSecretKeyForChildVaccinationNotifier2026ChangeIt}
+      REMINDER_CRON: "${REMINDER_CRON:-0 0 8 * * *}"
+      REMINDER_ZONE: ${REMINDER_ZONE:-Asia/Kolkata}
+    ports: ["8080:8080"]
+
+  frontend:
+    build:
+      context: ./frontend-react
+      args:
+        VITE_API_URL: http://localhost:8080/api
+        VITE_OSM_TILE_URL: "${VITE_OSM_TILE_URL:-https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png}"
+        VITE_OSRM_URL: "${VITE_OSRM_URL:-https://router.project-osrm.org}"
+    depends_on: [backend]
+    ports: ["5173:80"]
+
+volumes:
+  cvns_mysql_data:

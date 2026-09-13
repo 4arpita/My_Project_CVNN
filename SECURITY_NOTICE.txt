@@ -1,0 +1,11 @@
+IMPORTANT SECURITY NOTICE
+
+The project contains placeholders only.
+
+If you pasted a real Groq API key or Gmail App Password into a chat, screenshot, log, or public repository:
+1. Revoke the exposed Groq API key in GroqCloud and create a new key.
+2. Revoke the exposed Google App Password in your Google Account and create a new App Password.
+3. Store the replacements only in the local root .env file.
+4. Do not commit .env.
+5. Use SMTP_FROM_EMAIL equal to SMTP_USERNAME.
+6. Enter Gmail App Passwords without spaces in .env.
